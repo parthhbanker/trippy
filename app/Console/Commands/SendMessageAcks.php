@@ -6,23 +6,22 @@ use App\Events\Ack as AppAck;
 use App\Models\Ack;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Isolatable;
-use Illuminate\Support\Facades\Log;
 
-class SendAllAcks extends Command implements Isolatable
+class SendMessageAcks extends Command implements Isolatable
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'acks:send-all-acks';
+    protected $signature = 'acks:send-message-acks {message_id}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Send all acks when attempts == 0';
+    protected $description = 'Send Acks for a perticular message';
 
     /**
      * Execute the console command.
@@ -30,9 +29,7 @@ class SendAllAcks extends Command implements Isolatable
     public function handle()
     {
 
-        Log::error('running');
-
-        $acks = Ack::where('attempts',0)->get();
+       $acks = Ack::where('message_id',$this->argument('message_id'))->get();
 
         foreach ($acks as $ack) {
             broadcast(new AppAck($ack));
@@ -40,5 +37,13 @@ class SendAllAcks extends Command implements Isolatable
             $ack->save();
         }
 
+
     }
+
+    public function isolatableId(): string{
+
+        return $this->argument('message_id');
+
+    }
+
 }

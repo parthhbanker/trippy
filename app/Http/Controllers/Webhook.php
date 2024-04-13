@@ -62,11 +62,11 @@ class Webhook extends Controller
 
                 }
 
-
+                Artisan::call('acks:send-message-acks ' . $message->id);
 
                 // TODO: handel media upload
 
-                // TODO: return ack for message recived
+                return response()->json([ 'message' => 'message recived' , 'data' => $message]);
 
                 break;
 
@@ -78,32 +78,24 @@ class Webhook extends Controller
 
                 // TODO: get the ack-id and delete it from the acks table
 
-                AppAck::create([
+                if($user->id == $data->message->from){
 
-                    'message_id' => $message->id,
-                    'user_id' => $data->message->from
+                    $ack = Ack::find($data->ack_id);
 
-                ]);
+                    if($ack){
+                        $ack->delete();
+                    }
 
-                // TODO: check if there is ack id , delete if there is
+                }else{
 
-                break;
+                    AppAck::create([
 
-            case 'ack-status':
+                        'message_id' => $message->id,
+                        'user_id' => $data->message->from
 
-                $message = new Message();
-                $message->data = $data->message;
-                $message->save();
+                    ]);
 
-                AppAck::create([
-
-                    'message_id' => $message->id,
-                    'user_id' => $data->message->from,
-
-                ]);
-
-                // TODO: check if there is ack id , delete if there is
-
+                }
 
                 break;
 
