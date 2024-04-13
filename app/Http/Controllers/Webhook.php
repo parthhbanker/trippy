@@ -109,14 +109,8 @@ class Webhook extends Controller
 
             case 'connected':
                 // SHOULD WE MARK CONNECTED TO EVERY EVENT OR JUST TO THE SPECIFIC ??
-                $user->connected();
-                $user->save();
-
-                // TODO: when a client gets connected
-                // send all the messages and acks for that user
-                // TODO: call the command for specific user acks
-                // channel-user.id
-
+                // $user->connected();
+                // $user->save();
                 Artisan::call('acks:send-user-acks ' . $user->id);
 
                 break;

@@ -22,8 +22,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'is_connected',
-        'last_connected'
     ];
 
     /**
@@ -48,11 +46,6 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
-    }
-
-    public function connected(){
-        $this->is_connected = true;
-        $this->last_connected = now();
     }
 
     public function group_users() : HasMany {
