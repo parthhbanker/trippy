@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Events\Ack;
 use App\Models\Ack as AppAck;
 use App\Models\GroupUser;
+use App\Models\Media;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
+use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
 class Webhook extends Controller
 {
@@ -31,16 +35,17 @@ class Webhook extends Controller
                 $message->data = $data->message;
                 $message->save();
 
-                if($data->group){
+                if($data->message->group_id){
 
                     $users = GroupUser::where('group_id',$data->group)
                     ->where('user_id','!=',Auth::id())
                     ->get('user_id')->toarray();
 
-                    // TODO: create acks
-
-
                     foreach ($users as $usr) {
+
+                        if($usr == $user->id){
+                            continue;
+                        }
 
                         AppAck::create([
 
@@ -62,9 +67,64 @@ class Webhook extends Controller
 
                 }
 
-                Artisan::call('acks:send-message-acks ' . $message->id);
+                // TODO: Media upload
+                //
+                if($request->hasFile('media')){
 
-                // TODO: handel media upload
+                    // TODO: upload the media and generate links
+                    //
+                    // TODO: set the links in the message
+
+                    $files = $request->file('media');
+
+                    $media = [];
+
+                    foreach ($files as $file) {
+
+
+                        $file_name = time() . rand(999,9999);
+                        $file_name_ext = $file_name . '.' . $file->getClientOriginalExtention();
+                        $file->storeAs('public/chat/media',$file_name_ext);
+
+                        $file_type = $file->getMimeType();
+
+                        if (strpos($file_type, 'image') !== false) {
+                            $type = 'image';
+                        } else if (strpos($file_type, 'video') !== false) {
+                            $type = 'video';
+                        } else if (strpos($file_type, 'audio') !== false) {
+                            $type = 'audio';
+                        } else {
+                            $type = 'file';
+                        }
+
+
+
+                        Media::create([
+                            'url' => asset(Storage::url('public/chat/media' . $file_name_ext)),
+                            'media_type' => $type,
+                            'name' => $file->getClientOriginalName(),
+                            'sent_by' => Auth::id(),
+                            'group' => $data->message->group,
+                            'sent_to' => $data->message->to
+                        ]);
+
+
+                        $media[] = [
+                            'type' => $type,
+                            'url' => asset(Storage::url('public/chat/media' . $file_name_ext)),
+                            'thumbnail' => $this->generateThumbnail('public/chat/media/'.$file_name_ext , $type , $file_name)
+                        ];
+
+                    }
+
+                    $message->data->media = $media;
+                    $message->save();
+
+                }
+
+
+                Artisan::call('acks:send-message-acks ' . $message->id);
 
                 return response()->json([ 'message' => 'message recived' , 'data' => $message]);
 
@@ -75,8 +135,6 @@ class Webhook extends Controller
                 $message = New Message();
                 $message->data = $data->message;
                 $message->save();
-
-                // TODO: get the ack-id and delete it from the acks table
 
                 if($user->id == $data->message->from){
 
@@ -111,5 +169,32 @@ class Webhook extends Controller
 
 
     }
+
+     public function generateThumbnail($path , $type , $file_name)
+     {
+        // TODO: install all the dependencies
+
+         $thumbnailPath = 'chat/media/thumbnails/' . $file_name . '.jpg';
+
+         if($type == 'image'){
+
+            $image = Image::make($path);
+            $image->fit(100,100);
+            $image->save($thumbnailPath);
+
+         }else{
+
+            $ffmpeg = FFMpeg::fromDisk('public')
+                ->open($path)
+                ->getFrameFromSeconds(0)
+                ->export()
+                ->toDisk('public')
+                ->save($thumbnailPath);
+
+         }
+
+        return asset(Storage::url($thumbnailPath));
+    }
+
 
 }
