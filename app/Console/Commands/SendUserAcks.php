@@ -6,6 +6,7 @@ use App\Events\Ack as AppAck;
 use App\Models\Ack;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Broadcast;
 
 class SendUserAcks extends Command
 {
@@ -35,6 +36,7 @@ class SendUserAcks extends Command
         $acks = Ack::where('user_id',$user)->get();
 
         foreach ($acks as $ack) {
+            // Broadcast::event(new AppAck($ack));
             broadcast(new AppAck($ack));
             $ack->attempts += 1;
             $ack->save();

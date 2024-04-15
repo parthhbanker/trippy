@@ -11,8 +11,9 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
-class Ack
+class Ack implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -36,6 +37,8 @@ class Ack
      */
     public function broadcastOn(): array
     {
+        
+        Log::error('channel.' . $this->ack->user_id);
 
         return [
             new Channel('channel.' . $this->ack->user_id)

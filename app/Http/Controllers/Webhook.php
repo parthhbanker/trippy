@@ -32,12 +32,12 @@ class Webhook extends Controller
             case 'new-message':
 
                 $message = new Message();
-                $message->data = $data->message;
+                $message->data = $data;
                 $message->save();
 
-                if($data->message->group_id){
+                if(isset($data->message->group_id)){
 
-                    $users = GroupUser::where('group_id',$data->group)
+                    $users = GroupUser::where('group_id',$data->message->group)
                     ->where('user_id','!=',Auth::id())
                     ->get('user_id')->toarray();
 
@@ -61,7 +61,7 @@ class Webhook extends Controller
 
                     AppAck::create([
 
-                        'user_id' => $data->message->to,
+                        'user_id' => $data->message->receipient_id,
                         'message_id' => $message->id
                     ]);
 
@@ -106,7 +106,7 @@ class Webhook extends Controller
                             'name' => $file->getClientOriginalName(),
                             'sent_by' => Auth::id(),
                             'group' => $data->message->group,
-                            'sent_to' => $data->message->to
+                            'sent_to' => $data->message->receipient_id
                         ]);
 
 
@@ -118,15 +118,18 @@ class Webhook extends Controller
 
                     }
 
-                    $message->data->media = $media;
-                    $message->save();
+                    $data->message->media = $media;
 
                 }
 
 
                 Artisan::call('acks:send-message-acks ' . $message->id);
+                $data->message->message_id = $message->id;
+                $data->message->delivered_at = time();
+                $message->data = $data;
+                $message->save();
 
-                return response()->json([ 'message' => 'message recived' , 'data' => $message]);
+                return response()->json([ 'message' => 'message recived' , 'body' => $message->data]);
 
                 break;
 
@@ -136,7 +139,7 @@ class Webhook extends Controller
                 $message->data = $data->message;
                 $message->save();
 
-                if($user->id == $data->message->from){
+                if($user->id == $data->message->sender_id){
 
                     $ack = Ack::find($data->ack_id);
 
@@ -149,7 +152,7 @@ class Webhook extends Controller
                     AppAck::create([
 
                         'message_id' => $message->id,
-                        'user_id' => $data->message->from
+                        'user_id' => $data->message->sender_id
 
                     ]);
 
