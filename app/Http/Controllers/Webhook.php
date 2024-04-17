@@ -26,7 +26,6 @@ class Webhook extends Controller
         $data = json_decode($request->input('data'));
         $user = User::find(Auth::id());
 
-        Log::error("***************Web Hook pe aaya**************");
 
         switch ($event) {
             case 'new-message':
@@ -61,7 +60,7 @@ class Webhook extends Controller
 
                     AppAck::create([
 
-                        'user_id' => $data->message->receipient_id,
+                        'user_id' => $data->message->recipient_id,
                         'message_id' => $message->id
                     ]);
 
@@ -106,7 +105,7 @@ class Webhook extends Controller
                             'name' => $file->getClientOriginalName(),
                             'sent_by' => Auth::id(),
                             'group' => $data->message->group,
-                            'sent_to' => $data->message->receipient_id
+                            'sent_to' => $data->message->recipient_id
                         ]);
 
 
