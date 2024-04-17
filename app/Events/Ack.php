@@ -17,7 +17,6 @@ class Ack implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $message ;
     public $ack ;
 
     /**
@@ -25,8 +24,7 @@ class Ack implements ShouldBroadcast
      */
     public function __construct(AppAck $ack)
     {
-        $this->ack = $ack;
-        $this->message = $ack->message;
+        $this->ack = $ack->load('message');
 
     }
 
@@ -37,7 +35,7 @@ class Ack implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        
+
         Log::error('channel.' . $this->ack->user_id);
 
         return [
